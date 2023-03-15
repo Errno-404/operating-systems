@@ -1,0 +1,12 @@
+init 10
+count main_dll.c
+count main.c
+count wclib.c
+show 0
+show 1
+show 2
+delete 2
+delete 1
+delete 0
+destroy
+exit

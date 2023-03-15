@@ -1,0 +1,16 @@
+W obu testach plik testowany miał rozmiar 1 207 680 B.
+
+Implementacja z wykorzystaniem bufora - rozmiar bufora 1024 B.
+
+==================
+ real: 0.01000000
+ user: 0.00000000
+ sys:  0.00000000
+==================
+
+Implementacja bez bufora:
+==================
+ real: 5.88000000
+ user: 1.36000000
+ sys:  4.50000000
+==================
