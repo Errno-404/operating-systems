@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     // checking for argument errors
     if (argc != 2)
     {
-        printf("1 argumen expected, got %d instead!\n", argc);
+        printf("1 argumen expected, got %d instead!\n", argc - 1);
         return 1;
     }
 

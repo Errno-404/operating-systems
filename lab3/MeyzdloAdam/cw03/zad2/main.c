@@ -8,6 +8,14 @@ int main(int argc, char * argv[]){
     }
 
     printf("%s", argv[0]);
-    fflush(stdout);
-    execl("/bin/ls", "ls", argv[1], (char *) NULL);
+    
+    if(fflush(stdout) == EOF){
+        printf("fflush() error!\n");
+        return 1;
+    }
+
+    if(execl("/bin/ls", "ls", argv[1], (char *) NULL) == -1){
+        printf("execl() error!\n");
+        return 1;
+    }
 }
