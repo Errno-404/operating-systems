@@ -6,3 +6,6 @@ all: main.c
 
 clean:
 	rm -rf main
+
+test:
+	./main 30
