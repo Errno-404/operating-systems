@@ -1,4 +1,5 @@
 // poczytać Stevensa :>
+// perror!
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #define STRING_MAX 255
 
@@ -58,29 +60,31 @@ int handle_directory(char *dir_path, char *some_string)
 
         if (!S_ISDIR(buf.st_mode))
         {
-            // nie jest katalogiem
 
-
+            // zrobić funkcję z tego!
 
             if (!access(current_file_path, R_OK))
             {
-                
-                char buff [STRING_MAX];
+
+                char buff[STRING_MAX];
                 int fd = open(current_file_path, O_RDONLY);
-                if(fd == -1){
+                if (fd == -1)
+                {
                     printf("open() returned -1!\n");
                     return 1;
                 }
 
                 int nread = read(fd, buff, STRING_MAX);
-                if(nread == -1){
+                if (nread == -1)
+                {
                     printf("read() error!\n");
                     return 1;
                 }
 
                 close(fd);
 
-                if(strncmp(buff, some_string, strlen(some_string)) == 0){
+                if (strncmp(buff, some_string, strlen(some_string)) == 0)
+                {
                     // tutaj mamy już pewność że plik się właściwie zaczyna!
                     printf("path: %s pid: \n", current_file_path);
                     fflush(stdout);
@@ -90,21 +94,41 @@ int handle_directory(char *dir_path, char *some_string)
         else
         {
 
+            int status;
             // tutaj wywołać proces?? bez forków działa rekurencyjnie po prostu
 
-            if (handle_directory(current_file_path, some_string) == 1)
+            int pid;
+            if ((pid = fork()) == 0)
             {
-                return 1;
+                printf("dir path: %s", dir_path);
+                printf("pid: %d, parent pid: %d folder: %s\n", getpid(), getppid(), current_file_path);
+                fflush(stdout);
+                
+
+                if (handle_directory(current_file_path, some_string) == 1)
+                {
+                    return 1;
+                }
+
+            }
+            else if (pid > 0){
+                waitpid(pid, &status, WUNTRACED);
+            }
+            else
+            {
+                return 0;
             }
         }
     }
 
     closedir(current_dir);
+    exit(0);
     if (errno != 0)
     {
         printf("readdir error");
         return 1;
     }
+    // exit(0);
     return 0;
 }
 
