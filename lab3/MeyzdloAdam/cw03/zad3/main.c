@@ -10,14 +10,12 @@
 #include <limits.h>
 #include <unistd.h>
 #include <sys/types.h>
-
+#include <fcntl.h>
 
 #define STRING_MAX 255
 
-
-int handle_directory(char * dir_path, char * some_string)
+int handle_directory(char *dir_path, char *some_string)
 {
-    
 
     // making struct for individual process
 
@@ -28,21 +26,12 @@ int handle_directory(char * dir_path, char * some_string)
     // po co?
     char current_file_path[PATH_MAX];
 
-    
-    
-    
-    
-    
-    
-
     // opening current process directory
     if ((current_dir = opendir(dir_path)) == NULL)
     {
         printf("opendir error");
         return 1;
     }
-
-    
 
     errno = 0;
 
@@ -55,7 +44,6 @@ int handle_directory(char * dir_path, char * some_string)
         strcat(current_file_path, "/");
         strcat(current_file_path, current_file->d_name);
 
-
         if ((stat(current_file_path, &buf)) != 0)
         {
             printf("stat error");
@@ -63,25 +51,52 @@ int handle_directory(char * dir_path, char * some_string)
         }
 
         // pomijamy foldery . i ..
-        if(strcmp(current_file->d_name, ".") == 0 || strcmp(current_file->d_name, "..") == 0){
+        if (strcmp(current_file->d_name, ".") == 0 || strcmp(current_file->d_name, "..") == 0)
+        {
             continue;
         }
 
         if (!S_ISDIR(buf.st_mode))
         {
-            printf("%s\n", current_file->d_name);
-            
+            // nie jest katalogiem
+
+
+
+            if (!access(current_file_path, R_OK))
+            {
+                
+                char buff [STRING_MAX];
+                int fd = open(current_file_path, O_RDONLY);
+                if(fd == -1){
+                    printf("open() returned -1!\n");
+                    return 1;
+                }
+
+                int nread = read(fd, buff, STRING_MAX);
+                if(nread == -1){
+                    printf("read() error!\n");
+                    return 1;
+                }
+
+                close(fd);
+
+                if(strncmp(buff, some_string, strlen(some_string)) == 0){
+                    // tutaj mamy już pewność że plik się właściwie zaczyna!
+                    printf("path: %s pid: \n", current_file_path);
+                    fflush(stdout);
+                }
+            }
         }
-        else{
+        else
+        {
 
             // tutaj wywołać proces?? bez forków działa rekurencyjnie po prostu
 
-            if(handle_directory(current_file_path, some_string) == 1){
+            if (handle_directory(current_file_path, some_string) == 1)
+            {
                 return 1;
             }
         }
-        
-         
     }
 
     closedir(current_dir);
@@ -95,8 +110,6 @@ int handle_directory(char * dir_path, char * some_string)
 
 // ENDOF FUNCTIONS
 
-
-
 int main(int argc, char *argv[])
 {
 
@@ -106,12 +119,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if(strlen(argv[1]) > PATH_MAX){
+    if (strlen(argv[1]) > PATH_MAX)
+    {
         printf("The maximum path size is %d!\n", PATH_MAX);
         return 1;
     }
 
-    if(strlen(argv[2]) > STRING_MAX){
+    if (strlen(argv[2]) > STRING_MAX)
+    {
         printf("The maximum length of the second argument is %d!\n", STRING_MAX);
         return 1;
     }
@@ -122,7 +137,5 @@ int main(int argc, char *argv[])
     char some_string[255];
     strcpy(some_string, argv[2]);
 
-
     return handle_directory(dir_path, some_string);
-   
 }
