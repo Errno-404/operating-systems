@@ -12,6 +12,8 @@
 #include <sys/types.h>
 
 
+#define STRING_MAX 255
+
 
 int handle_directory(char * dir_path, char * some_string)
 {
@@ -85,7 +87,17 @@ int main(int argc, char *argv[])
 
     if (argc != 3)
     {
-        printf("incorrect!! wrr\n");
+        printf("Expected 2 arguments, got %d instead!\n", argc - 1);
+        return 1;
+    }
+
+    if(strlen(argv[1]) > PATH_MAX){
+        printf("The maximum path size is %d!\n", PATH_MAX);
+        return 1;
+    }
+
+    if(strlen(argv[2]) > STRING_MAX){
+        printf("The maximum length of the second argument is %d!\n", STRING_MAX);
         return 1;
     }
 
