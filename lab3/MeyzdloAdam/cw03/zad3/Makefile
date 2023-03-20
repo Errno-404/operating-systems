@@ -7,3 +7,5 @@ all: main.c
 clean:
 	rm -rf main
 
+test:
+	./main ../../../../../operating_systems_lab '#include'

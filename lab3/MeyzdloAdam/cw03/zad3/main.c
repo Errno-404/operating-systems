@@ -1,6 +1,3 @@
-// poczytać Stevensa :>
-// perror!
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +22,6 @@ int handle_directory(char *dir_path, char *some_string)
     struct dirent *current_file;
     DIR *current_dir;
 
-    // po co?
     char current_file_path[PATH_MAX];
 
     // opening current process directory
