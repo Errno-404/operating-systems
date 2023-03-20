@@ -21,11 +21,16 @@ int handle_directory(char * dir_path, char * some_string)
 
     // making struct for individual process
 
+    struct stat buf;
+    struct dirent *current_file;
+    DIR *current_dir;
+
+    // po co?
     char current_file_path[PATH_MAX];
 
-    DIR *current_dir;
-    struct dirent *current_file;
-    struct stat buf;
+    
+    
+    
     
     
     
@@ -57,14 +62,23 @@ int handle_directory(char * dir_path, char * some_string)
             return 1;
         }
 
+        // pomijamy foldery . i ..
+        if(strcmp(current_file->d_name, ".") == 0 || strcmp(current_file->d_name, "..") == 0){
+            continue;
+        }
+
         if (!S_ISDIR(buf.st_mode))
         {
             printf("%s\n", current_file->d_name);
             
         }
         else{
-            printf("%d", strcmp(current_file->d_name))
-            printf("%s", current_file->d_name);
+
+            // tutaj wywołać proces?? bez forków działa rekurencyjnie po prostu
+
+            if(handle_directory(current_file_path, some_string) == 1){
+                return 1;
+            }
         }
         
          
@@ -76,6 +90,7 @@ int handle_directory(char * dir_path, char * some_string)
         printf("readdir error");
         return 1;
     }
+    return 0;
 }
 
 // ENDOF FUNCTIONS
