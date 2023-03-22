@@ -1,0 +1,91 @@
+Sygnały
+ignorowanie sygnału - sygnał znika w systemie
+maskowanie - sygnał czeka np aż przestaniemy maskować
+
+signal(SIGUSR1, SEG_IGN) <- 2 param stałaa, to oznacza, że sygnał będzie ignorowany ten usr1
+jak sygnał przyjdzie, to kod jest przerywany! i sygnał jest obsługiwany (async)
+
+raise(Sigusr1); wysłanie sygnału do siebie tzn, kill(getpid(), sigusr1);
+
+raise(Sigusr1) <- jak zakomentujemy signa(), powinien przerwać sam siebie chyba
+
+
+2 przypadek
+
+void obsluga(int signum){
+    printf("Obsluga");
+    
+}
+
+
+signal(Sigusr1, obsluga);
+raise(sigusr1);
+
+
+int signum nie ma większego znaczenia dla nas
+
+
+jedna f. obslugi może być dla wielu sygnałów obsługą, więc trzeba rozróżnić sygnał, więc signum jest istotne
+
+
+
+
+3 przypadek
+
+
+sigset_t newmask, oldmask, set;
+
+sigemptyset(&mask);
+sigaddset(&newmask, SIGUSR1)
+sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+
+raise(SIGUSR1);
+
+sigpending(&set)
+if(sigismember(&set, SIGUSR1) == 1)
+printf("SIGUSR1 oczekuje na odblokowanie(1)")
+
+
+
+
+handler -> funkcja obsługi
+
+man sigaction <- flagi SA_...
+
+Flagi - o co chodzi:
+
+
+union sigval war;
+int pid;
+
+pid = atoi(tab[1]);
+sigqueue(pid, sigusr1, war);
+
+
+
+
+
+void obsluga_v1(int signum, siginfo_t * si, void *p3){
+    printf()
+}
+
+
+sigset_t set
+struct sigaction act;
+int i;
+
+act.sa_sigaction=obsluga_v2;
+sigemptyset(&act.sa_mask);
+act.sa_flags=SA_SIGINFO;
+sigaction(SIGUSR1, &act, NULL)
+
+
+
+
+
+Fajna komunikacja między procesami :>
+
+Catcher <- wypisuje pid i sobie tam działa
+Sender <- uruchamiamy go z pid catchera i jakieś wartości liczbowe, które określą tryby dzałania, wysyła sygnał lub kilka sygnałów catcher ma wysłać potwierdzenie, w sumie
+taki lokalny serwer robimy.
+
