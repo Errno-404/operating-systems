@@ -12,9 +12,10 @@ typedef enum {
     REQUEST_COUNT = 3,
     TIME_LOOP = 4,
     SHUT_DOWN = 5,
+    DO_NOTHING = 6
 } MODE;
 
-MODE mode = ONE_HUNDRED;
+MODE mode = DO_NOTHING;
 bool completed = true;
 int request_counter = 0;
 
@@ -60,8 +61,6 @@ int main() {
                 shut_down();
                 break;
             default:
-                printf("[CATCHER] Invalid mode!\n");
-                fflush(NULL);
                 completed = true;
         }
 
@@ -120,6 +119,7 @@ void handler(int signo, siginfo_t *info, void *context) {
     else {
         printf("[CATCHER] Expected request in range: 1..5, got %d instead!\n", request);
         fflush(NULL);
+        mode = DO_NOTHING;
         completed = true;
     }
 

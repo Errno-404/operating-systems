@@ -58,24 +58,30 @@ bool wait_for_ack(int state_index)
 
 int main(int argc, char **argv)
 {
+    // Check for valid arguments
     if (argc < 3)
     {
         fprintf(stderr, "[SENDER] Invalid arguments.\n");
         exit(EXIT_FAILURE);
     }
 
+    // Get catcher PID from arguments
     int catcher_pid = atoi(argv[1]);
 
+    // Loop through all the states and send signals
     for (int i = INITIAL_STATE; i < argc; i++)
     {
         int state = atoi(argv[i]);
 
+        // Register signal handler
         if (!register_signal_handler())
             exit(EXIT_FAILURE);
 
+        // Send signal to catcher
         if (!send_signal(catcher_pid, state))
             exit(EXIT_FAILURE);
 
+        // Wait for acknowledgement
         if (!wait_for_ack(i))
             i--;
     }
