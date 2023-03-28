@@ -1,133 +1,135 @@
 #include <stdio.h>
-#include <signal.h>
 #include <unistd.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <wait.h>
+#include <sys/wait.h>
 
-#define MAX_CALLS 3
-
-int call_idx = 0;
-int call_depth = 0;
+#define SIGNAL SIGUSR1
+#define MAX_CALLS 4
 
 
-void signal_info_handler(int sig, siginfo_t* info, void* ucontext);
-void signal_data_info_handler(int sig, siginfo_t* info, void* ucontext);
-void signal_child_info_handler(int sig, siginfo_t* info, void* ucontext);
-void signal_handler(int sig, siginfo_t* info, void* ucontext);
-void setup_sigaction(int signalidx, int flags, void (*action)(int, siginfo_t*, void*));
+int call_id;
+int call_depth;
 
-int main(int argc, char** argv)
+typedef void (*handler_t)(int, siginfo_t *, void *);
+
+void set_action(struct sigaction action, handler_t handler, int flag);
+void nodefer_handler(int signo, siginfo_t *info, void *context);
+// SIGINFO
+void info_handler(int signo, siginfo_t *info, void *context);
+void nodefer_test(struct sigaction act);
+void info_test(struct sigaction act);
+void reset_test(struct sigaction act);
+void reset_handler(int signo, siginfo_t *info, void *context);
+
+int main(int argc, char **argv)
 {
-    /*
-     * === Testing SA_SIGINFO ===
-     */
-
-    printf("\n-- Testing SA_SIGINFO\n");
-    setup_sigaction(SIGUSR1, SA_SIGINFO, signal_info_handler);
-    setup_sigaction(SIGUSR2, SA_SIGINFO, signal_data_info_handler);
-    setup_sigaction(SIGCHLD, SA_SIGINFO, signal_child_info_handler);
-
-    // Expecting handler
-    raise(SIGUSR1);
-
-    // Expecting handler with custom data
-    sigval_t signal_value = { 15 };
-    sigqueue(getpid(), SIGUSR2, signal_value);
-
-    // Expecting SIGCHLD to know the exit status of forked child.
-    pid_t pid = fork();
-    if (pid == 0)
+    if (argc != 1)
     {
-        // We're the child.
-        printf("(Hello from child process.)\n");
-
-        // Exiting with status 1.
-        exit(1);
-    }
-    else
-    {
-        printf("(Created child process with pid: %d)\n", pid);
+        printf("Didn't expect any argument!\n");
+        return 1;
     }
 
-    // Waiting for the child process to end.
-    int status = 0;
-    while (wait(&status) > 0);
+    struct sigaction action;
 
-    /*
-     * === Testing SA_NODEFER ===
-     */
+    // Testing SIGINFO HERE:
+    printf("SIGINFO:\n");
+    info_test(action);
+    printf("\n");
 
-    printf("\n-- Testing SA_NODEFER\n");
-    setup_sigaction(SIGUSR1, SA_NODEFER, signal_handler);
+    printf("NODEFER:\n");
+    nodefer_test(action);
+    printf("\n");
 
-    // Expecting handler, with depth.
-    raise(SIGUSR1);
+    printf("RESETHAND:\n");
+    reset_test(action);
 
-    /*
-     * === Testing SA_RESETHAND ===
-     */
-
-    printf("\n-- Testing SA_RESETHAND\n");
-    setup_sigaction(SIGUSR1, SA_RESETHAND, signal_handler);
-
-    // Expecting handler
-    raise(SIGUSR1);
-
-    // Expecting default behaviour, termination of the program.
-    raise(SIGUSR1);
-
-    // shouldn't be reached!
-    printf("HI");
     return 0;
 }
 
-
-void signal_info_handler(int sig, siginfo_t* info, void* ucontext)
+void set_action(struct sigaction action, handler_t handler, int flag)
 {
-    printf("Signal info: \n");
-    printf("- Signal number: %d\n", info->si_signo);
-    printf("- The signal has been sent by process %d\n", info->si_pid);
-    printf("- Real user ID of sending process %d\n", info->si_uid);
+    sigemptyset(&action.sa_mask);
+    action.sa_sigaction = handler;
+    action.sa_flags = flag;
+    sigaction(SIGNAL, &action, NULL);
+    call_id = 0;
+    call_depth = 0;
 }
 
-void signal_data_info_handler(int sig, siginfo_t* info, void* ucontext)
-{
-    printf("Signal info: \n");
-    printf("- Signal number: %d\n", info->si_signo);
-    printf("- Custom integer data sent %d\n", info->si_value.sival_int);
-}
 
-void signal_child_info_handler(int sig, siginfo_t* info, void* ucontext)
-{
-    printf("Signal info: \n");
-    printf("- Signal number: %d\n", info->si_signo);
-    printf("- Child pid: %d\n", info->si_pid);
-    printf("- Child exit status: %d\n", info->si_status);
-}
 
-void signal_handler(int sig, siginfo_t* info, void* ucontext)
-{
-    int current_idx = call_idx;
-    printf("start IDX=%d, DEPTH=%d\n", current_idx, call_depth);
-    call_idx++;
 
-    call_depth++;
-    if (call_idx < MAX_CALLS)
-    {
-        raise(SIGUSR1);
+// SIGINFO
+void info_handler(int signo, siginfo_t *info, void *context)
+{
+    printf("[I HANDLER] Signal number:%d\n", info->si_signo);
+    printf("[I HANDLER] PID:%d\n", info->si_pid);
+    printf("[I HANDLER] UID:%d\n", info->si_uid);
+    printf("[I HANDLER] USER TIME:%ld\n", info->si_utime);
+    printf("[I HANDLER] SYSTEM TIME: %ld\n", info->si_stime);
+
+    if(!(info->si_value.sival_ptr == NULL)){
+        printf("[I HANDLER] VALUE PASSED: %d\n", info->si_value.sival_int);
     }
+    
+
+}
+// NODEFER flag does not prevent handler function from sending the same signal it is currently handling, that's why something like recursive call happens here
+void nodefer_handler(int signo, siginfo_t *info, void *context)
+{
+    printf("[N HANDLER] start: %d, call depth: %d\n", call_id, call_depth);
+
+    call_id++;
+    call_depth++;
+    if (call_id < MAX_CALLS)
+        raise(SIGNAL);
     call_depth--;
 
-    printf("end  IDX=%d, DEPTH=%d\n", current_idx, call_depth);
+    printf("[N HANDLER] end:   %d, call depth: %d\n", call_id - 1, call_depth);
+}
+void reset_handler(int signo, siginfo_t *info, void *context){
+    printf("[R HANDLER]\n");
 }
 
-void setup_sigaction(int signalidx, int flags, void (*action)(int, siginfo_t*, void*))
+
+void info_test(struct sigaction act)
 {
-    static struct sigaction act;
-    act.sa_sigaction = action;
-    act.sa_flags = flags;
-    sigemptyset(&act.sa_mask);
+    printf("=========SELF=========\n");
+    set_action(act, info_handler, SA_SIGINFO);
+    raise(SIGNAL);
+    printf("\n");
 
-    call_idx = 0;
-    sigaction(signalidx, &act, NULL);
+    printf("=========CHILD=========\n");
+    if (fork() == 0)
+    {
+        raise(SIGNAL);
+        exit(0);
+    }
+    else
+        wait(NULL);
+    printf("\n");
+
+    printf("=========CUSTOM=========\n");
+    set_action(act, info_handler, SA_SIGINFO);
+
+    union sigval value;
+    value.sival_int = 2137;
+    sigqueue(getpid(), SIGNAL, value);
 }
+
+void nodefer_test(struct sigaction act)
+{
+    set_action(act, nodefer_handler, SA_NODEFER);
+    raise(SIGNAL);
+}
+
+
+
+void reset_test(struct sigaction act)
+{
+    set_action(act, reset_handler, SA_RESETHAND);
+    raise(SIGNAL);
+    raise(SIGNAL);
+}
+

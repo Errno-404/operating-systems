@@ -1,21 +1,25 @@
 CC=gcc
 CFLAGS=-Wall -O2
 
-all: main.c other.c
-	$(CC) $(CFLAGS) -o main main.c
-	$(CC) $(CFLAGS) -o other other.c
+all: main_exec.c main_fork.c
+	$(CC) $(CFLAGS) -o main_exec main_exec.c
+	$(CC) $(CFLAGS) -o main_fork main_fork.c
 
 clean:
-	rm -rf main other
+	rm -rf main_exec main_fork
 
 ignore:
-	./main ignore
+	echo "exec:" && ./main_exec ignore 
+	echo "fork:" && ./main_fork ignore
+	
 
 handler:
-	./main handler
+	echo "fork" && ./main_fork handler
 
 mask:
-	./main mask
+	echo "exec:" && ./main_exec mask
+	echo "fork:" && ./main_fork mask
 
 pending:
-	./main pending
+	echo "exec:" && ./main_exec pending
+	echo "fork:" && ./main_fork pending

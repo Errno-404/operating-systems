@@ -1,0 +1,50 @@
+Z ponizszego wyjscia programu, odczytac mozna w jaki sposob dzialaja flagi: SA_SIGINFO, SA_NODEFER oraz SA_RESETHAND.
+
+SA_SIGINFO daje mozliwosc przekazania informacji wraz z sygnalem, w tym jak w scenariuszu CUSTOM, mozna przekazac wartosc (tutaj 2137),
+ale mozna odczytac rowniez inne przydatne informacje, takie jak czas uzytkownika, czas systemu, UUI.
+
+SA_NODEFER daje mozliwosc wyslania sygnalu z procedury obslugujacej dany sygnal, tzn. rekurencyjne wyslanie sygnalu, co zostalo zaprezentowane
+w odpowiedniej rubryce ponizej.
+
+SA_RESETHAND sprawia, ze po wykonaniu procedury obslugujacej sygnal, jego kolejne wywolanie nie zostanie juz obsluzone przez ta procedure.
+
+
+Ponizej przedstawione zostalo wyjscie programu:
+
+
+SIGINFO:
+=========SELF=========
+[I HANDLER] Signal number:10
+[I HANDLER] PID:41650
+[I HANDLER] UID:1000
+[I HANDLER] USER TIME:0
+[I HANDLER] SYSTEM TIME: 0
+
+=========CHILD=========
+[I HANDLER] Signal number:10
+[I HANDLER] PID:41651
+[I HANDLER] UID:1000
+[I HANDLER] USER TIME:0
+[I HANDLER] SYSTEM TIME: 0
+
+=========CUSTOM=========
+[I HANDLER] Signal number:10
+[I HANDLER] PID:41650
+[I HANDLER] UID:1000
+[I HANDLER] USER TIME:0
+[I HANDLER] SYSTEM TIME: 0
+[I HANDLER] VALUE PASSED: 2137
+
+NODEFER:
+[N HANDLER] start: 0, call depth: 0
+[N HANDLER] start: 1, call depth: 1
+[N HANDLER] start: 2, call depth: 2
+[N HANDLER] start: 3, call depth: 3
+[N HANDLER] end:   3, call depth: 3
+[N HANDLER] end:   3, call depth: 2
+[N HANDLER] end:   3, call depth: 1
+[N HANDLER] end:   3, call depth: 0
+
+RESETHAND:
+[R HANDLER]
+make: *** [Makefile:12: test] User defined signal 1

@@ -1,0 +1,12 @@
+Dla opcji fork:
+
+ignore: Sygnal jest ignorowany zarowno w procesie macierzystym jak i w potomnym
+handler: Funkcja obslugujaca handler jest wywolywana w obu procesach
+mask: Maska blokuje sygnaly w obu procesach (jest dziedzicznoa!)
+pending: Oczekujacy sygnal jest widoczny TYLKO w procesie rodzica
+
+Dla opcji exec:
+
+ignore: Sygnal jest ignorowany w obu procesach
+mask: Maska blokuje sygnaly w obu procesach
+pending: Oczekujacy sygnal jest widoczny w obu procesach (exec wykonuje kopie procesu)
