@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall
+CFLAGS=-Wall -O2
 
 all: sender.c catcher.c
 	$(CC) $(CFLAGS) -o sender sender.c

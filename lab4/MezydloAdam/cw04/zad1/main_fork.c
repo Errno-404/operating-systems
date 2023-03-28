@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     {
         if (execl(argv[0], argv[0], argv[1], "reset", NULL) == -1)
         {
-            fprintf(stderr, "Couldn't run sub-program 'other'!\n");
+            fprintf(stderr, "Couldn't run this program once again!\n");
             exit(1);
         }
     }
