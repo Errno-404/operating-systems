@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
             char interval[30];
             snprintf(interval, 30, "%f-%f, %lf", start, end, dx);
-            if(execl("./sub", "sub", interval, NULL) == -1){
+            if(execl("./integrate", "integrate", interval, NULL) == -1){
                 perror("execl() error");
                 exit(1);
             }
