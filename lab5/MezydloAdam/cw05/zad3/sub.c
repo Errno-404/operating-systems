@@ -11,7 +11,6 @@ double f(double x)
     return 4.0 / (x * x + 1);
 }
 
-
 double integrate(double a, double b, double dx)
 {
     double x, sum;
@@ -33,19 +32,21 @@ int main(int argc, char *argv[])
     sscanf(interval_str, "%lf-%lf, %lf", &a, &b, &dx);
 
     result = integrate(a, b, dx);
-
-
     int fd;
+    if ((fd = open(FIFO_FILE, O_WRONLY)) == -1)
+    {
+        perror("open() error");
+        exit(1);
+    }
 
-
-    fd = open(FIFO_FILE, O_WRONLY);
-
-
-
-    char arr1[12];
+    char arr1[16];
     sprintf(arr1, "%lf", result);
 
-    write(fd, arr1, sizeof(arr1));
+    if (write(fd, arr1, sizeof(arr1)) == -1)
+    {
+        perror("write() error");
+        exit(1);
+    }
     close(fd);
 
     return 0;
