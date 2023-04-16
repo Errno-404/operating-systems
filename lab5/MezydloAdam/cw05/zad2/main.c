@@ -21,9 +21,14 @@ void compute_integral(int pipefd[2], double start, double end, double dx)
     {
         result += f(x) * dx;
     }
-    write(pipefd[1], &result, sizeof(result));
+
+    if(write(pipefd[1], &result, sizeof(result)) == -1){
+        perror("write() error");
+        exit(1);
+    }
+
     close(pipefd[1]); // close write end of the pipe
-    exit(EXIT_SUCCESS);
+    exit(0);
 }
 
 int main(int argc, char *argv[])
@@ -33,8 +38,10 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s dx num_processes\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+
     double dx = atof(argv[1]);
     int num_processes = atoi(argv[2]);
+    
     int i;
     pid_t pid;
     double total = 0.0;
@@ -49,13 +56,15 @@ int main(int argc, char *argv[])
     {
         if (pipe(pipefd[i]) == -1)
         {
-            perror("pipe");
+            perror("pipe() error");
             exit(EXIT_FAILURE);
         }
+
         pid = fork();
+        
         if (pid == -1)
         {
-            perror("fork");
+            perror("fork() error");
             exit(EXIT_FAILURE);
         }
         else if (pid == 0)
@@ -70,7 +79,11 @@ int main(int argc, char *argv[])
     {
         close(pipefd[i][1]); // close write end of the pipe
         double result;
-        read(pipefd[i][0], &result, sizeof(result));
+
+        if(read(pipefd[i][0], &result, sizeof(result)) == -1){
+            perror("read() error");
+            exit(EXIT_FAILURE);
+        }
         close(pipefd[i][0]); // close read end of the pipe
         total += result;
     }
