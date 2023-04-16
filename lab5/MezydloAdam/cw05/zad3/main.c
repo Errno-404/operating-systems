@@ -21,10 +21,13 @@ int main(int argc, char *argv[])
     int num_processes = atoi(argv[2]);
 
     int fd;
-    char arr1[80];
-    double result;
+    double result = 0.0;
 
-    mkfifo(FIFO_FILE, 0666);
+    if(mkfifo(FIFO_FILE, 0666) == -1){
+        perror("mkfifo() error");
+        exit(1);
+    }
+
     pid_t pid;
     for (int i = 0; i < num_processes; i++)
     {
@@ -33,28 +36,34 @@ int main(int argc, char *argv[])
 
         if (pid == -1)
         {
-            printf("Failed to create sub process!");
+            printf("fork() error");
             exit(1);
         }
         else if (pid == 0)
-        {
-            // Child process (sub.c)
-            char interval[30];
-
+        {   
             double start = i * 1.0 / num_processes;
             double end = (i + 1) * 1.0 / num_processes;
 
+            char interval[30];
             snprintf(interval, 30, "%f-%f, %lf", start, end, dx);
-            execl("./sub", "sub", interval, NULL);
+            if(execl("./sub", "sub", interval, NULL) == -1){
+                perror("execl() error");
+                exit(1);
+            }
         }
         else
         {
-            char arr2[80];
-            fd = open(FIFO_FILE, O_RDONLY);
-            read(fd, arr2, sizeof(arr2));
+            char returned[16];
+            if((fd = open(FIFO_FILE, O_RDONLY)) == -1){
+                perror("open() error");
+                exit(1);
+            }
+            if(read(fd, returned, sizeof(returned)) == -1){
+                perror("read() error");
+                exit(1);
+            }
 
-            result += atof(arr2);
-
+            result += atof(returned);
             close(fd);
         }
     }
