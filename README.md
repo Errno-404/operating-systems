@@ -2,8 +2,7 @@
 
 - [x] lab1 - 100%
 - [x] lab2 - 100%
-- [ ] lab3 - 40%
-  - [ ] recursion
-  - [ ] fork()
-  - [ ] tests
-  - [ ] cleaning code
+- [x] lab3 - 100%
+- [x] lab4 - 100%
+- [x] lab5 - 100%
+ 

@@ -4,11 +4,8 @@ CFLAGS=-Wall -O2
 
 all:
 	$(CC) $(CFLAGS) main.c -o main
-	$(CC) $(CFLAGS) integrate.c -o integrate
+	$(CC) $(CFLAGS) sub.c -o sub
 
 
 clean:
-	rm main integrate
-
-test:
-	./main 0.00001 20
+	rm main sub
