@@ -68,6 +68,6 @@ int main(int argc, char *argv[])
         }
     }
     printf("Message received from main process: %lf\n", result);
-    unlink("myfifo");
+    // unlink("myfifo");
     return 0;
 }

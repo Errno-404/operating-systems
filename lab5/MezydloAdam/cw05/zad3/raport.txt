@@ -1,0 +1,9 @@
+Execution time with 50 processes and dx=0.000100: 0.010000 seconds
+Execution time with 50 processes and dx=0.000100: 0.020000 seconds
+Execution time with 50 processes and dx=0.000100: 0.010000 seconds
+Execution time with 50 processes and dx=0.000100: 0.020000 seconds
+Execution time with 50 processes and dx=0.000100: 0.020000 seconds
+Execution time with 50 processes and dx=0.000100: 0.010000 seconds
+Execution time with 50 processes and dx=0.000100: 0.020000 seconds
+Execution time with 50 processes and dx=0.000100: 0.010000 seconds
+Execution time with 50 processes and dx=0.000100: 0.020000 seconds
