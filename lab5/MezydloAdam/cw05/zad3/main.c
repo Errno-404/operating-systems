@@ -1,73 +1,100 @@
-// szkielet fifo z exec
-
 #include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <ctype.h>
+#include <sys/times.h>
+
 
 #define FIFO_FILE "myfifo"
 
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
-
-    if (argc < 3)
-    {
-        fprintf(stderr, "Usage: %s dx num_processes\n", argv[0]);
+    // checking for the arguments
+    if(argc < 3){
+        perror("What da hail!");
         exit(EXIT_FAILURE);
     }
-
-    double dx = atof(argv[1]);
+    
     int num_processes = atoi(argv[2]);
-
-    int fd;
-    double result = 0.0;
-
-    if(mkfifo(FIFO_FILE, 0666) == -1){
-        perror("mkfifo() error");
-        exit(1);
-    }
+    double dx = atof(argv[1]);
 
     pid_t pid;
+    int fd;
+    double total = 0.0;
+
+    // creating fifo
+    mkfifo(FIFO_FILE, 0666);
+
+    struct tms tmsstart, tmsend;
+    clock_t start, end;
+
+    start = times(&tmsstart);
+    // making `num_processes` programs ran by execl
     for (int i = 0; i < num_processes; i++)
     {
-
         pid = fork();
 
-        if (pid == -1)
+        if (pid < 0)
         {
-            printf("fork() error");
+            perror("fork error");
             exit(1);
         }
         else if (pid == 0)
-        {   
-            double start = i * 1.0 / num_processes;
-            double end = (i + 1) * 1.0 / num_processes;
+        {
 
-            char interval[30];
-            snprintf(interval, 30, "%f-%f, %lf", start, end, dx);
-            if(execl("./integrate", "integrate", interval, NULL) == -1){
-                perror("execl() error");
-                exit(1);
-            }
+            double left = i * 1.0 / num_processes;
+            double right = (i + 1) * 1.0 / num_processes;
+
+            // preparing second argument
+            char interval_str[256];
+            sprintf(interval_str, "(%lf, %lf); %lf", left, right, dx);
+            
+            // executing sub-program
+            execl("sub", "sub", FIFO_FILE, interval_str, NULL);
+            perror("execlp error");
+            exit(1);
         }
         else
         {
-            char returned[16];
-            if((fd = open(FIFO_FILE, O_RDONLY)) == -1){
-                perror("open() error");
-                exit(1);
-            }
-            if(read(fd, returned, sizeof(returned)) == -1){
-                perror("read() error");
-                exit(1);
-            }
-
-            result += atof(returned);
+            // reading fifo
+            fd = open(FIFO_FILE, O_RDONLY);
+            double sol;
+            read(fd, &sol, sizeof(double));
+         
+            total += sol;
             close(fd);
+
+            // waiting for the child process to end
+            wait(NULL);
         }
+
+        
     }
-    printf("Message received from main process: %lf\n", result);
-    // unlink("myfifo");
+    end = times(&tmsend);
+    // removing fifo file
+    unlink(FIFO_FILE);
+
+
+    
+    printf("%lf", total);
     return 0;
+}
+
+
+
+
+
+static void pr_times(FILE *fp, clock_t real, struct tms *tmsstart, struct tms *tmsend, double dx, int num_processes)
+{
+    static long clktck = 0;
+    if (clktck == 0)
+    {
+        clktck = sysconf(_SC_CLK_TCK);
+    }
+
+    fprintf(fp, "Execution time with %d processes and dx=%lf: %f seconds\n", num_processes, dx, real / (double)clktck);
 }
