@@ -30,14 +30,19 @@ int main(int argc, char *argv[])
     sscanf(argv[2], "(%lf, %lf); %lf", &a, &b, &dx);
 
     int fifo_fd;
-    char fifo_name[] = "myfifo";
 
     // Open the FIFO queue for writing
-    fifo_fd = open(argv[1], O_WRONLY);
+    if((fifo_fd = open(argv[1], O_WRONLY)) == -1){
+
+        perror("open() error in sub.c!\n");
+        exit(EXIT_FAILURE);
+    }
 
     double result = integrate(a, b ,dx);
 
-    write(fifo_fd, &result, sizeof(result));
+    if(write(fifo_fd, &result, sizeof(result)) == -1){
+        perror("write() error in sub.c");
+    }
 
     // Close the FIFO queue
     close(fifo_fd);

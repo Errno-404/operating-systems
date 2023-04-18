@@ -1,0 +1,1 @@
+Execution time with 12 processes and dx=0.000100: 0.000000 seconds
