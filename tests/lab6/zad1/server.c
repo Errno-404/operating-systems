@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
 #include "client_server.h"
 
 int new_client_id = 0;
@@ -12,9 +6,9 @@ key_t server_ipc_key;
 int server_ipc_id;
 
 MessageBuffer *message;
-int active_clients[10];
+int active_clients[MAX_NO_CLIENTS];
 
-int client_msgids[10];
+int client_msgids[MAX_NO_CLIENTS];
 
 void initialize_server();
 void init_client_connection();
@@ -40,7 +34,6 @@ int main()
         {
         case INIT:
             init_client_connection();
-            display_active_clients();
             break;
 
         case LIST:
@@ -71,11 +64,9 @@ int main()
 
 void initialize_server()
 {
-    // tworzymy kolejkę
     server_ipc_key = ftok(getenv("HOME"), PROJ_ID);
     server_ipc_id = msgget(server_ipc_key, 0666 | IPC_CREAT);
 
-    // tworzymy strukturę na komunikaty
     message = malloc(sizeof(MessageBuffer));
 
     for (int i = 0; i < MAX_NO_CLIENTS; i++)

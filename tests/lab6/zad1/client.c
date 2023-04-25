@@ -1,63 +1,37 @@
-#include <stdio.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <signal.h>
-#include <fcntl.h>
-
-#include <unistd.h>
-#include <sys/select.h>
 #include "client_server.h"
 
-// TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
 
 int client_ipc_id, server_msgid;
 MessageBuffer *message;
 
-
-// For unblocking input, because sending STOP via IPC and doing the same via signal would be 
+// For unblocking input, because sending STOP via IPC and doing the same via signal would be
 struct timeval tv;
 fd_set readfds;
 int retval;
 int fd = 0;
 
-void stop_client()
-{
-    message->mesg_type = STOP;
-    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-
-    msgctl(client_ipc_id, IPC_RMID, NULL);
-    exit(0);
-}
 
 
 key_t server_key, key;
 
-
-
-
-
 int my_id;
 
-
+void stop_client();
 void initialize_client_connection();
+
 int main()
 {
     initialize_client_connection();
-    
+
     // nonblocking input setting
     int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
-
 
     char line[1024];
     char cmd[32];
     char string[1024];
     int id;
 
-    
     while (1)
     {
 
@@ -65,15 +39,17 @@ int main()
         {
 
             if (message->mesg_type == STOP)
-                stop_client();
-
-            if (message->mesg_type == TOALL)
             {
-                printf("now: %d-%02d-%02d %02d:%02d:%02d\n", message->tm.tm_year + 1900, message->tm.tm_mon + 1, message->tm.tm_mday, message->tm.tm_hour, message->tm.tm_min, message->tm.tm_sec);
-                fflush(stdout);
+
+                stop_client();
             }
-            if(message->mesg_type == TOONE){
-                printf("%d", message->dest);
+
+            if (message->mesg_type == TOALL || message->mesg_type == TOONE)
+            {
+                printf("Received TOALL\n");
+                printf("Message from: %d.\n", message->client_id);
+                printf("Message body: \"%s\"\n", message->message);
+                printf("Server  time: %d-%02d-%02d %02d:%02d:%02d\n", message->tm.tm_year + 1900, message->tm.tm_mon + 1, message->tm.tm_mday, message->tm.tm_hour, message->tm.tm_min, message->tm.tm_sec);
                 fflush(stdout);
             }
         }
@@ -140,7 +116,6 @@ int main()
 
             line[0] = '\0';
         }
-
     }
 
     msgctl(client_ipc_id, IPC_RMID, NULL);
@@ -149,18 +124,35 @@ int main()
 }
 
 
-void initialize_client_connection(){
+
+void stop_on_server_overflow(){
+    msgctl(client_ipc_id, IPC_RMID, NULL);
+    exit(0);
+}
+
+void stop_client()
+{
+    printf("Received STOP. Exiting...\n");
+    fflush(stdout);
+    
+    message->mesg_type = STOP;
+    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+
+    msgctl(client_ipc_id, IPC_RMID, NULL);
+    exit(0);
+}
+
+void initialize_client_connection()
+{
     signal(SIGINT, stop_client);
 
     server_key = ftok(getenv("HOME"), PROJ_ID);
     server_msgid = msgget(server_key, 0666);
 
-    // tworzymy własną kolejkę
     srand(time(NULL));
     key = ftok(getenv("HOME"), rand() % 255 + 1);
     client_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
-    // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
     message = malloc(sizeof(MessageBuffer));
 
     message->mesg_type = INIT;
@@ -170,10 +162,12 @@ void initialize_client_connection(){
     msgrcv(client_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
     my_id = message->client_id;
 
-    // if server overload then exit
     if (message->client_id == MAX_NO_CLIENTS)
     {
         printf("Server overloaded! Exiting ...\n");
-        stop_client();
+        stop_on_server_overflow();
     }
 }
+
+
+
