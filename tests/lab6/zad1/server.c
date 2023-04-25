@@ -190,7 +190,7 @@ void send_to_one(MessageBuffer *message)
 
     MessageBuffer *tosend = malloc(sizeof(MessageBuffer));
     tosend->client_id = message->client_id;
-    tosend->mesg_type = TOALL;
+    tosend->mesg_type = TOONE;
     strcpy(tosend->message, message->message);
     tosend->dest = dest;
     tosend->tm = message->tm;
