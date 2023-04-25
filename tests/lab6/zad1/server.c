@@ -3,6 +3,7 @@
 #include <sys/msg.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <string.h>
 #include "client_server.h"
 
 int new_client_id = 0;
@@ -13,7 +14,6 @@ int server_ipc_id;
 MessageBuffer *message;
 int active_clients[10];
 
-
 int client_msgids[10];
 
 void initialize_server();
@@ -23,6 +23,9 @@ void finish_client_work();
 void display_active_clients();
 void stop_server();
 void update_new_client_id();
+
+void send_to_all(MessageBuffer *);
+void send_to_one(MessageBuffer *);
 
 int main()
 {
@@ -45,14 +48,12 @@ int main()
             break;
 
         case TOALL:
-            printf("%s", message->message);
-            printf("now: %d-%02d-%02d %02d:%02d:%02d\n", message->tm.tm_year + 1900, message->tm.tm_mon + 1, message->tm.tm_mday, message->tm.tm_hour, message->tm.tm_min, message->tm.tm_sec);
-            fflush(stdout);
+            send_to_all(message);
+
             break;
 
         case TOONE:
-            printf("%d", message->dest);
-            fflush(stdout);
+            printf("ODEBRALEM");
             break;
         case STOP:
             finish_client_work();
@@ -82,9 +83,10 @@ void initialize_server()
         active_clients[i] = -1;
     }
 
-    for(int i = 0; i <  MAX_NO_CLIENTS; i ++){
+    for (int i = 0; i < MAX_NO_CLIENTS; i++)
+    {
         client_msgids[i] = -1;
-    }    
+    }
 
     signal(SIGINT, stop_server);
 }
@@ -134,16 +136,16 @@ void finish_client_work()
 
 void stop_server()
 {
-    // to continue
     message->mesg_type = STOP;
     for (int i = 0; i < MAX_NO_CLIENTS; i++)
     {
-        if(client_msgids[i] != -1){
+        if (client_msgids[i] != -1)
+        {
             msgsnd(client_msgids[i], message, sizeof(MessageBuffer), 0);
             msgrcv(server_ipc_id, message, sizeof(MessageBuffer), STOP, 0);
         }
     }
-    
+
     msgctl(server_ipc_id, IPC_RMID, NULL);
     exit(0);
 }
@@ -161,4 +163,42 @@ void update_new_client_id()
         i++;
     }
     new_client_id = i;
+}
+
+void send_to_all(MessageBuffer *message)
+{
+    MessageBuffer *tosend = malloc(sizeof(MessageBuffer));
+    int this_client_id = message->client_id;
+
+    tosend->client_id = this_client_id;
+    tosend->mesg_type = TOALL;
+    strcpy(tosend->message, message->message);
+    tosend->tm = message->tm;
+
+    for (int i = 0; i < MAX_NO_CLIENTS; i++)
+    {
+        if (client_msgids[i] != -1 && client_msgids[i] != client_msgids[this_client_id])
+        {
+            msgsnd(client_msgids[i], tosend, sizeof(MessageBuffer), 0);
+        }
+    }
+}
+
+void send_to_one(MessageBuffer *message)
+{
+    int dest = message->dest;
+
+    MessageBuffer *tosend = malloc(sizeof(MessageBuffer));
+    tosend->client_id = message->client_id;
+    tosend->mesg_type = TOALL;
+    strcpy(tosend->message, message->message);
+    tosend->dest = dest;
+    tosend->tm = message->tm;
+
+    
+    if (dest >= 0 && dest < MAX_NO_CLIENTS && client_msgids[dest] != -1)
+    {
+        msgsnd(client_msgids[dest], tosend, sizeof(MessageBuffer), 0);
+    }
+
 }
