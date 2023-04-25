@@ -15,13 +15,15 @@ int main()
     key_t key = ftok(getenv("HOME"), PROJ_ID);
     int msgid = msgget(key, 0666 | IPC_CREAT);
 
+
+
     // tworzymy strukturę na komunikaty
     MessageBuffer *message = malloc(sizeof(MessageBuffer));
 
     // główna pętla w której oczekujemy na komunikaty od klientów
     while (1)
     {
-        msgrcv(msgid, message, sizeof(MessageBuffer), -1, 0);
+        msgrcv(msgid, message, sizeof(MessageBuffer), PRIORITY, 0);
 
         switch (message->mesg_type)
         {
@@ -33,7 +35,10 @@ int main()
             message->client_id = client_id;
             client_id++;
             msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
-            printf("SENT BACK CLIENT_ID\n");
+            break;
+
+        case LIST:
+            printf("%ld", message->mesg_type);
             fflush(stdout);
             break;
 
@@ -41,6 +46,10 @@ int main()
             break;
         }
     }
+
+   
+
+
 
     msgctl(msgid, IPC_RMID, NULL);
 
