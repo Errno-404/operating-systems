@@ -71,7 +71,9 @@ int main()
         }
         else if (retval)
         {
-            fgets(line, sizeof(line), stdin);
+            if(fgets(line, sizeof(line), stdin) == NULL){
+                perror("fgets() error\n");
+            }
             if (strcmp(line, "LIST\n") == 0)
             {
                 message->client_id = my_id;
