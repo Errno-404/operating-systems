@@ -9,7 +9,7 @@
 
 // TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
 
-int msgid, server_msgid;
+int server_ipc_id, server_msgid;
 MessageBuffer *message;
 
 void stop_client()
@@ -17,7 +17,7 @@ void stop_client()
     message->mesg_type = STOP;
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
 
-    msgctl(msgid, IPC_RMID, NULL);
+    msgctl(server_ipc_id, IPC_RMID, NULL);
     exit(0);
 }
 
@@ -31,7 +31,7 @@ int main()
     // tworzymy własną kolejkę
     srand(time(NULL));
     key_t key = ftok(getenv("HOME"), rand() % 255 + 1);
-    msgid = msgget(key, 0666 | IPC_CREAT);
+    server_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
     // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
     message = malloc(sizeof(MessageBuffer));
@@ -40,7 +40,7 @@ int main()
     message->client_key = key;
 
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-    msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
+    msgrcv(server_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
 
     // if server overload then exit
     if (message->client_id == MAX_NO_CLIENTS)
@@ -101,7 +101,7 @@ int main()
         line[0] = '\0';
     }
 
-    msgctl(msgid, IPC_RMID, NULL);
+    msgctl(server_ipc_id, IPC_RMID, NULL);
 
     return 0;
 }

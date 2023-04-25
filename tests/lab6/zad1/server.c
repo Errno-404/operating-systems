@@ -5,85 +5,38 @@
 #include <signal.h>
 #include "client_server.h"
 
-
 int new_client_id = 0;
 
-int clients[10];
-int msgid;
+key_t server_ipc_key;
+int server_ipc_id;
 
-void list_all()
-{
-    printf("Active clients:\n");
-    for (int i = 0; i < 10; i++)
-    {
-        if (clients[i] != -1)
-        {
-            printf(" * ID: %d\n", clients[i]);
-        }
-    }
-    fflush(stdout);
-}
+MessageBuffer *message;
+int active_clients[10];
 
-void close_server()
-{
-    msgctl(msgid, IPC_RMID, NULL);
-    exit(0);
-}
+void initialize_server();
+void init_client_connection();
 
-
-void update_new_client_id(){
-    int i = new_client_id + 1;
-    while( i < MAX_NO_CLIENTS){
-        if(clients[i] == -1){
-            new_client_id = i;
-            return;
-        }
-        i++;
-    }
-    new_client_id = i;
-}
-
+void display_active_clients();
+void stop_server();
+void update_new_client_id();
 
 int main()
 {
-    // tworzymy kolejkę
-    key_t key = ftok(getenv("HOME"), PROJ_ID);
-    msgid = msgget(key, 0666 | IPC_CREAT);
 
-    // tworzymy strukturę na komunikaty
-    MessageBuffer *message = malloc(sizeof(MessageBuffer));
+    initialize_server();
 
-    for (int i = 0; i < 10; i++)
-    {
-        clients[i] = -1;
-    }
-
-    signal(SIGINT, close_server);
-
-    // główna pętla w której oczekujemy na komunikaty od klientów
     while (1)
     {
-        msgrcv(msgid, message, sizeof(MessageBuffer), PRIORITY, 0);
+        msgrcv(server_ipc_id, message, sizeof(MessageBuffer), PRIORITY, 0);
 
         switch (message->mesg_type)
         {
         case INIT:
-            key_t client_key = message->client_key;
-            int client_msgid = msgget(client_key, 0666);
-
-            message->client_id = new_client_id;
-
-            if (new_client_id < MAX_NO_CLIENTS)
-            {
-                clients[new_client_id] = new_client_id;
-                update_new_client_id();
-            }
-
-            msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
+            init_client_connection();
             break;
 
         case LIST:
-            list_all();
+            display_active_clients();
             break;
 
         case TOALL:
@@ -98,7 +51,9 @@ int main()
             break;
         case STOP:
             int this_client_id = message->client_id;
-            clients[this_client_id] = -1;
+            active_clients[this_client_id] = -1;
+
+            // new_client_id update (always the lowest possible)
             if (this_client_id < new_client_id)
             {
                 new_client_id = this_client_id;
@@ -111,7 +66,74 @@ int main()
         }
     }
 
-    msgctl(msgid, IPC_RMID, NULL);
+    msgctl(server_ipc_id, IPC_RMID, NULL);
 
     return 0;
+}
+
+void initialize_server()
+{
+    // tworzymy kolejkę
+    server_ipc_key = ftok(getenv("HOME"), PROJ_ID);
+    server_ipc_id = msgget(server_ipc_key, 0666 | IPC_CREAT);
+
+    // tworzymy strukturę na komunikaty
+    message = malloc(sizeof(MessageBuffer));
+
+    for (int i = 0; i < 10; i++)
+    {
+        active_clients[i] = -1;
+    }
+
+    signal(SIGINT, stop_server);
+}
+
+void init_client_connection()
+{
+    key_t client_key = message->client_key;
+    int client_msgid = msgget(client_key, 0666);
+
+    message->client_id = new_client_id;
+
+    if (new_client_id < MAX_NO_CLIENTS)
+    {
+        active_clients[new_client_id] = new_client_id;
+        update_new_client_id();
+    }
+
+    msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
+}
+
+void display_active_clients()
+{
+    printf("Active clients:\n");
+    for (int i = 0; i < 10; i++)
+    {
+        if (active_clients[i] != -1)
+        {
+            printf(" * ID: %d\n", active_clients[i]);
+        }
+    }
+    fflush(stdout);
+}
+
+void stop_server()
+{
+    msgctl(server_ipc_id, IPC_RMID, NULL);
+    exit(0);
+}
+
+void update_new_client_id()
+{
+    int i = new_client_id + 1;
+    while (i < MAX_NO_CLIENTS)
+    {
+        if (active_clients[i] == -1)
+        {
+            new_client_id = i;
+            return;
+        }
+        i++;
+    }
+    new_client_id = i;
 }
