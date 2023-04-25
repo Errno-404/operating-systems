@@ -34,8 +34,9 @@ void stop_client()
 
 
 key_t server_key, key;
-int main()
-{
+
+
+void initialize_client_connection(){
     signal(SIGINT, stop_client);
 
     server_key = ftok(getenv("HOME"), PROJ_ID);
@@ -61,7 +62,12 @@ int main()
         printf("Server overloaded! Exiting ...\n");
         stop_client();
     }
+}
 
+int main()
+{
+    
+    initialize_client_connection();
     
 
     // parsing input
