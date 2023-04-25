@@ -149,6 +149,7 @@ void stop_server()
         }
     }
 
+    free(message);
     msgctl(server_ipc_id, IPC_RMID, NULL);
     exit(0);
 }
@@ -186,6 +187,7 @@ void send_to_all(MessageBuffer *message)
             msgsnd(client_msgids[i], tosend, MSG_SIZE, 0);
         }
     }
+    free(tosend);
 }
 
 struct tm get_time()
@@ -221,4 +223,5 @@ void send_to_one(MessageBuffer *message)
     {
         msgsnd(client_msgids[dest], tosend, MSG_SIZE, 0);
     }
+    free(tosend);
 }

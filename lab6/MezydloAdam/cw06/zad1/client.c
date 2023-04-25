@@ -50,7 +50,7 @@ int main()
 
             if (message->mesg_type == TOALL || message->mesg_type == TOONE)
             {
-                printf("Received TOALL\n");
+                printf("New message!\n");
                 printf("Message from: %d.\n", message->client_id);
                 printf("Message body: \"%s\"\n", message->message);
                 printf("Server  time: %d-%02d-%02d %02d:%02d:%02d\n", message->tm.tm_year + 1900, message->tm.tm_mon + 1, message->tm.tm_mday, message->tm.tm_hour, message->tm.tm_min, message->tm.tm_sec);
@@ -129,6 +129,7 @@ int main()
 
 void stop_on_server_overflow(){
     msgctl(client_ipc_id, IPC_RMID, NULL);
+    free(message);
     exit(0);
 }
 
@@ -138,8 +139,10 @@ void stop_client()
     fflush(stdout);
     
     message->mesg_type = STOP;
+    message->client_id = my_id;
     msgsnd(server_msgid, message, MSG_SIZE, 0);
 
+    free(message);
     msgctl(client_ipc_id, IPC_RMID, NULL);
     exit(0);
 }
