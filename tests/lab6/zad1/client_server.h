@@ -1,6 +1,27 @@
 #include <stdio.h>
 #include <time.h>
 
+#include <stdio.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+#include <time.h>
+
+#include <stdio.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <signal.h>
+#include <fcntl.h>
+
+#include <unistd.h>
+#include <sys/select.h>
+
+
 #define PROJ_ID 1
 #define PRIORITY -6
 

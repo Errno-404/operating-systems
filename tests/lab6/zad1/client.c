@@ -36,34 +36,13 @@ void stop_client()
 key_t server_key, key;
 
 
-void initialize_client_connection(){
-    signal(SIGINT, stop_client);
 
-    server_key = ftok(getenv("HOME"), PROJ_ID);
-    server_msgid = msgget(server_key, 0666);
 
-    // tworzymy własną kolejkę
-    srand(time(NULL));
-    key = ftok(getenv("HOME"), rand() % 255 + 1);
-    client_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
-    // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
-    message = malloc(sizeof(MessageBuffer));
+int my_id;
 
-    message->mesg_type = INIT;
-    message->client_key = key;
 
-    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-    msgrcv(client_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
-
-    // if server overload then exit
-    if (message->client_id == MAX_NO_CLIENTS)
-    {
-        printf("Server overloaded! Exiting ...\n");
-        stop_client();
-    }
-}
-
+void initialize_client_connection();
 int main()
 {
     initialize_client_connection();
@@ -104,24 +83,29 @@ int main()
         FD_SET(fd, &readfds);
         tv.tv_sec = 0;
         tv.tv_usec = 0;
-
         retval = select(fd + 1, &readfds, NULL, NULL, &tv);
+
         if (retval == -1)
         {
             perror("select");
         }
         else if (retval)
         {
-
             fgets(line, sizeof(line), stdin);
             if (strcmp(line, "LIST\n") == 0)
             {
+                message->client_id = my_id;
                 message->mesg_type = LIST;
+                message->dest = -1;
+                message->message[0] = '\0';
                 msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
             }
             else if (strcmp(line, "STOP\n") == 0)
             {
+                message->client_id = my_id;
                 message->mesg_type = STOP;
+                message->dest = -1;
+                message->message[0] = '\0';
                 msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
                 break;
             }
@@ -131,6 +115,7 @@ int main()
                 {
                     if (strcmp(cmd, "2ONE") == 0)
                     {
+                        message->client_id = my_id;
                         message->mesg_type = TOONE;
                         strcpy(message->message, string);
                         time_t t = time(NULL);
@@ -143,6 +128,7 @@ int main()
                 {
                     if (strcmp(cmd, "2ALL") == 0)
                     {
+                        message->client_id = my_id;
                         message->mesg_type = TOALL;
                         strcpy(message->message, string);
                         time_t t = time(NULL);
@@ -160,4 +146,34 @@ int main()
     msgctl(client_ipc_id, IPC_RMID, NULL);
 
     return 0;
+}
+
+
+void initialize_client_connection(){
+    signal(SIGINT, stop_client);
+
+    server_key = ftok(getenv("HOME"), PROJ_ID);
+    server_msgid = msgget(server_key, 0666);
+
+    // tworzymy własną kolejkę
+    srand(time(NULL));
+    key = ftok(getenv("HOME"), rand() % 255 + 1);
+    client_ipc_id = msgget(key, 0666 | IPC_CREAT);
+
+    // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
+    message = malloc(sizeof(MessageBuffer));
+
+    message->mesg_type = INIT;
+    message->client_key = key;
+
+    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+    msgrcv(client_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
+    my_id = message->client_id;
+
+    // if server overload then exit
+    if (message->client_id == MAX_NO_CLIENTS)
+    {
+        printf("Server overloaded! Exiting ...\n");
+        stop_client();
+    }
 }

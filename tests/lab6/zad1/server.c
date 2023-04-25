@@ -199,6 +199,7 @@ void send_to_one(MessageBuffer *message)
     if (dest >= 0 && dest < MAX_NO_CLIENTS && client_msgids[dest] != -1)
     {
         msgsnd(client_msgids[dest], tosend, sizeof(MessageBuffer), 0);
+
     }
 
 }
