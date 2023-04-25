@@ -28,7 +28,7 @@ int main()
 
     while (1)
     {
-        msgrcv(server_ipc_id, message, sizeof(MessageBuffer), PRIORITY, 0);
+        msgrcv(server_ipc_id, message, MSG_SIZE, PRIORITY, 0);
 
         switch (message->mesg_type)
         {
@@ -67,7 +67,7 @@ void initialize_server()
     server_ipc_key = ftok(getenv("HOME"), PROJ_ID);
     server_ipc_id = msgget(server_ipc_key, 0666 | IPC_CREAT);
 
-    message = malloc(sizeof(MessageBuffer));
+    message = malloc(MSG_SIZE);
 
     for (int i = 0; i < MAX_NO_CLIENTS; i++)
     {
@@ -96,7 +96,7 @@ void init_client_connection()
         update_new_client_id();
     }
 
-    msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
+    msgsnd(client_msgid, message, MSG_SIZE, 0);
 }
 
 void display_active_clients()
@@ -132,8 +132,8 @@ void stop_server()
     {
         if (client_msgids[i] != -1)
         {
-            msgsnd(client_msgids[i], message, sizeof(MessageBuffer), 0);
-            msgrcv(server_ipc_id, message, sizeof(MessageBuffer), STOP, 0);
+            msgsnd(client_msgids[i], message, MSG_SIZE, 0);
+            msgrcv(server_ipc_id, message, MSG_SIZE, STOP, 0);
         }
     }
 
@@ -158,7 +158,7 @@ void update_new_client_id()
 
 void send_to_all(MessageBuffer *message)
 {
-    MessageBuffer *tosend = malloc(sizeof(MessageBuffer));
+    MessageBuffer *tosend = malloc(MSG_SIZE);
     int this_client_id = message->client_id;
 
     tosend->client_id = this_client_id;
@@ -170,7 +170,7 @@ void send_to_all(MessageBuffer *message)
     {
         if (client_msgids[i] != -1 && client_msgids[i] != client_msgids[this_client_id])
         {
-            msgsnd(client_msgids[i], tosend, sizeof(MessageBuffer), 0);
+            msgsnd(client_msgids[i], tosend, MSG_SIZE, 0);
         }
     }
 }
@@ -179,7 +179,7 @@ void send_to_one(MessageBuffer *message)
 {
     int dest = message->dest;
 
-    MessageBuffer *tosend = malloc(sizeof(MessageBuffer));
+    MessageBuffer *tosend = malloc(MSG_SIZE);
     tosend->client_id = message->client_id;
     tosend->mesg_type = TOONE;
     strcpy(tosend->message, message->message);
@@ -189,7 +189,7 @@ void send_to_one(MessageBuffer *message)
     
     if (dest >= 0 && dest < MAX_NO_CLIENTS && client_msgids[dest] != -1)
     {
-        msgsnd(client_msgids[dest], tosend, sizeof(MessageBuffer), 0);
+        msgsnd(client_msgids[dest], tosend, MSG_SIZE, 0);
 
     }
 

@@ -1,15 +1,4 @@
 #include <stdio.h>
-#include <time.h>
-
-#include <stdio.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include <time.h>
-
-#include <stdio.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <stdlib.h>
@@ -29,6 +18,7 @@
 
 
 
+
 typedef struct MessageBuffer {
     long mesg_type;
     key_t client_key;
@@ -38,12 +28,16 @@ typedef struct MessageBuffer {
     int dest;
 } MessageBuffer;
 
+const int MSG_SIZE = sizeof(MessageBuffer);
 
 
 typedef enum MSG_TYPE{
     INIT = 1,
-    LIST = 2,
-    TOALL = 3,
-    TOONE = 4,
+    TOALL = 2,
+    TOONE = 3,
+    LIST = 4,
     STOP = 5
 } MSG_TYPE;
+
+
+

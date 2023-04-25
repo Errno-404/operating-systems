@@ -1,3 +1,7 @@
+// Client could be better...
+
+
+
 #include "client_server.h"
 
 
@@ -35,7 +39,7 @@ int main()
     while (1)
     {
 
-        if (msgrcv(client_ipc_id, message, sizeof(MessageBuffer), 0, IPC_NOWAIT) != -1)
+        if (msgrcv(client_ipc_id, message, MSG_SIZE, 0, IPC_NOWAIT) != -1)
         {
 
             if (message->mesg_type == STOP)
@@ -74,7 +78,7 @@ int main()
                 message->mesg_type = LIST;
                 message->dest = -1;
                 message->message[0] = '\0';
-                msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                msgsnd(server_msgid, message, MSG_SIZE, 0);
             }
             else if (strcmp(line, "STOP\n") == 0)
             {
@@ -82,7 +86,7 @@ int main()
                 message->mesg_type = STOP;
                 message->dest = -1;
                 message->message[0] = '\0';
-                msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                msgsnd(server_msgid, message, MSG_SIZE, 0);
                 break;
             }
             else
@@ -97,7 +101,7 @@ int main()
                         time_t t = time(NULL);
                         message->tm = *localtime(&t);
                         message->dest = id;
-                        msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                        msgsnd(server_msgid, message, MSG_SIZE, 0);
                     }
                 }
                 else if (sscanf(line, "%s %s", cmd, string) == 2)
@@ -109,7 +113,7 @@ int main()
                         strcpy(message->message, string);
                         time_t t = time(NULL);
                         message->tm = *localtime(&t);
-                        msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                        msgsnd(server_msgid, message, MSG_SIZE, 0);
                     }
                 }
             }
@@ -136,7 +140,7 @@ void stop_client()
     fflush(stdout);
     
     message->mesg_type = STOP;
-    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+    msgsnd(server_msgid, message, MSG_SIZE, 0);
 
     msgctl(client_ipc_id, IPC_RMID, NULL);
     exit(0);
@@ -153,13 +157,13 @@ void initialize_client_connection()
     key = ftok(getenv("HOME"), rand() % 255 + 1);
     client_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
-    message = malloc(sizeof(MessageBuffer));
+    message = malloc(MSG_SIZE);
 
     message->mesg_type = INIT;
     message->client_key = key;
 
-    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-    msgrcv(client_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
+    msgsnd(server_msgid, message, MSG_SIZE, 0);
+    msgrcv(client_ipc_id, message, MSG_SIZE, INIT, 0);
     my_id = message->client_id;
 
     if (message->client_id == MAX_NO_CLIENTS)
