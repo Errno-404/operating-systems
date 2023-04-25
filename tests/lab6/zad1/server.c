@@ -2,10 +2,9 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <stdlib.h>
-#include<signal.h>
+#include <signal.h>
 #include "client_server.h"
 #define MAX 10
-
 
 int new_client_id = 0;
 
@@ -14,23 +13,24 @@ int new_client_id = 0;
 int clients[10];
 int msgid;
 
-void list_all(){
+void list_all()
+{
     printf("Active clients:\n");
-    for(int i = 0; i < 10; i ++){
-        if (clients[i] != -1){
+    for (int i = 0; i < 10; i++)
+    {
+        if (clients[i] != -1)
+        {
             printf(" * ID: %d\n", clients[i]);
         }
     }
     fflush(stdout);
 }
 
-
-void close_server(){
+void close_server()
+{
     msgctl(msgid, IPC_RMID, NULL);
     exit(0);
 }
-
-
 
 int main()
 {
@@ -38,16 +38,13 @@ int main()
     key_t key = ftok(getenv("HOME"), PROJ_ID);
     msgid = msgget(key, 0666 | IPC_CREAT);
 
-
-
     // tworzymy strukturę na komunikaty
     MessageBuffer *message = malloc(sizeof(MessageBuffer));
 
-
-    for(int i = 0; i < 10; i ++){
+    for (int i = 0; i < 10; i++)
+    {
         clients[i] = -1;
     }
-
 
     signal(SIGINT, close_server);
 
@@ -63,10 +60,15 @@ int main()
             int client_msgid = msgget(client_key, 0666);
 
             message->client_id = new_client_id;
-            clients[new_client_id] = new_client_id;
 
-            // update new_client_id
-            new_client_id++;
+            if (new_client_id < MAX_NO_CLIENTS)
+            {
+                clients[new_client_id] = new_client_id;
+
+                // update new_client_id
+                new_client_id++;
+            }
+
             msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
             break;
 
@@ -92,20 +94,17 @@ int main()
             clients[this_client_id] = -1;
             list_all();
 
-            if(this_client_id < new_client_id){
+            if (this_client_id < new_client_id)
+            {
                 new_client_id = this_client_id;
             }
-            
+
             break;
 
         default:
             break;
         }
     }
-
-   
-
-
 
     msgctl(msgid, IPC_RMID, NULL);
 

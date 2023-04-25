@@ -2,6 +2,11 @@
 #include <time.h>
 #define PROJ_ID 1
 #define PRIORITY -6
+
+#define MAX_NO_CLIENTS 2
+
+
+
 typedef struct MessageBuffer {
     long mesg_type;
     key_t client_key;

@@ -39,7 +39,13 @@ int main()
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
     msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
 
-    singal(SIGINT, stop_client);
+    // if server overload then exit
+    if(message->client_id == MAX_NO_CLIENTS){
+        printf("Server overloaded!\n");
+        stop_client();
+    }
+
+    signal(SIGINT, stop_client);
 
     // parsing input
 
