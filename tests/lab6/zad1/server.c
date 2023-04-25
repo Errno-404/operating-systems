@@ -4,11 +4,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include "client_server.h"
-#define MAX 10
+
 
 int new_client_id = 0;
-
-// TODO clien_id managing
 
 int clients[10];
 int msgid;
@@ -31,6 +29,20 @@ void close_server()
     msgctl(msgid, IPC_RMID, NULL);
     exit(0);
 }
+
+
+void update_new_client_id(){
+    int i = new_client_id + 1;
+    while( i < MAX_NO_CLIENTS){
+        if(clients[i] == -1){
+            new_client_id = i;
+            return;
+        }
+        i++;
+    }
+    new_client_id = i;
+}
+
 
 int main()
 {
@@ -64,9 +76,7 @@ int main()
             if (new_client_id < MAX_NO_CLIENTS)
             {
                 clients[new_client_id] = new_client_id;
-
-                // update new_client_id
-                new_client_id++;
+                update_new_client_id();
             }
 
             msgsnd(client_msgid, message, sizeof(MessageBuffer), 0);
@@ -87,13 +97,8 @@ int main()
             fflush(stdout);
             break;
         case STOP:
-            printf("%d", message->client_id);
-            fflush(stdout);
-
             int this_client_id = message->client_id;
             clients[this_client_id] = -1;
-            list_all();
-
             if (this_client_id < new_client_id)
             {
                 new_client_id = this_client_id;

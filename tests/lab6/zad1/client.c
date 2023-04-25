@@ -9,10 +9,13 @@
 
 // TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
 
-int msgid;
+int msgid, server_msgid;
+MessageBuffer *message;
 
 void stop_client()
 {
+    message->mesg_type = STOP;
+    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
 
     msgctl(msgid, IPC_RMID, NULL);
     exit(0);
@@ -23,7 +26,7 @@ int main()
 
     // po uruchomieniu klienta pobieramy kolejkę serwera
     key_t server_key = ftok(getenv("HOME"), PROJ_ID);
-    int server_msgid = msgget(server_key, 0666);
+    server_msgid = msgget(server_key, 0666);
 
     // tworzymy własną kolejkę
     srand(time(NULL));
@@ -31,7 +34,7 @@ int main()
     msgid = msgget(key, 0666 | IPC_CREAT);
 
     // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
-    MessageBuffer *message = malloc(sizeof(MessageBuffer));
+    message = malloc(sizeof(MessageBuffer));
 
     message->mesg_type = INIT;
     message->client_key = key;
@@ -40,7 +43,8 @@ int main()
     msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
 
     // if server overload then exit
-    if(message->client_id == MAX_NO_CLIENTS){
+    if (message->client_id == MAX_NO_CLIENTS)
+    {
         printf("Server overloaded!\n");
         stop_client();
     }
