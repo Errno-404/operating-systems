@@ -7,20 +7,20 @@
 #include <signal.h>
 #include "client_server.h"
 
-
 // TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
 
 int msgid;
 
-void stop_client(){
+void stop_client()
+{
 
-     msgctl(msgid, IPC_RMID, NULL);
-     exit(0);
+    msgctl(msgid, IPC_RMID, NULL);
+    exit(0);
 }
 
 int main()
 {
-    
+
     // po uruchomieniu klienta pobieramy kolejkę serwera
     key_t server_key = ftok(getenv("HOME"), PROJ_ID);
     int server_msgid = msgget(server_key, 0666);
@@ -39,8 +39,6 @@ int main()
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
     msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
 
-
-
     singal(SIGINT, stop_client);
 
     // parsing input
@@ -52,18 +50,23 @@ int main()
     while (1)
     {
         fgets(line, sizeof(line), stdin);
-        if(strcmp(line, "LIST\n") == 0){
+        if (strcmp(line, "LIST\n") == 0)
+        {
             message->mesg_type = LIST;
             msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
         }
-        else if(strcmp(line, "STOP\n") == 0){
+        else if (strcmp(line, "STOP\n") == 0)
+        {
             message->mesg_type = STOP;
             msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
             break;
         }
-        else{
-            if(sscanf(line, "%s %d %s", cmd, &id, string) == 3){
-                if(strcmp(cmd, "2ONE") == 0){
+        else
+        {
+            if (sscanf(line, "%s %d %s", cmd, &id, string) == 3)
+            {
+                if (strcmp(cmd, "2ONE") == 0)
+                {
                     message->mesg_type = TOALL;
                     strcpy(message->message, string);
                     time_t t = time(NULL);
@@ -72,8 +75,10 @@ int main()
                     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
                 }
             }
-            else if(sscanf(line, "%s %s", cmd, string)== 2){
-                if(strcmp(cmd, "2ALL") == 0){
+            else if (sscanf(line, "%s %s", cmd, string) == 2)
+            {
+                if (strcmp(cmd, "2ALL") == 0)
+                {
                     message->mesg_type = TOALL;
                     strcpy(message->message, string);
                     time_t t = time(NULL);
@@ -83,9 +88,7 @@ int main()
             }
         }
 
-
         line[0] = '\0';
-
     }
 
     msgctl(msgid, IPC_RMID, NULL);
