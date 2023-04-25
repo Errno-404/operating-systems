@@ -4,23 +4,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 #include "client_server.h"
 
-// structure for message queue
+
+// TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
+
+int msgid;
+
+void stop_client(){
+
+     msgctl(msgid, IPC_RMID, NULL);
+     exit(0);
+}
 
 int main()
 {
-    srand(time(NULL));
-
+    
     // po uruchomieniu klienta pobieramy kolejkę serwera
     key_t server_key = ftok(getenv("HOME"), PROJ_ID);
     int server_msgid = msgget(server_key, 0666);
 
     // tworzymy własną kolejkę
+    srand(time(NULL));
     key_t key = ftok(getenv("HOME"), rand() % 255 + 1);
-    int msgid = msgget(key, 0666 | IPC_CREAT);
+    msgid = msgget(key, 0666 | IPC_CREAT);
 
-    // wysyłamy message do servera ze swoim key (póki co INIT = 1)
+    // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
     MessageBuffer *message = malloc(sizeof(MessageBuffer));
 
     message->mesg_type = INIT;
@@ -28,50 +38,54 @@ int main()
 
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
     msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
-    printf("%d", message->client_id);
-
-  
 
 
-    
 
+    singal(SIGINT, stop_client);
+
+    // parsing input
+
+    char line[1024];
+    char cmd[32];
+    char string[1024];
+    int id;
     while (1)
     {
-        char s[256];
-        char command[3][256];
-        
-        fgets(s, sizeof(s), stdin);
-        char *token = strtok(s, " ");
-        int i = 0;
-        int correct = 0;
-        while (token)
-        {
-            if(i > 2){
-                printf("No tak byc nie moze!\n");
-                fflush(stdout);
-                correct = 1;
-                break;
+        fgets(line, sizeof(line), stdin);
+        if(strcmp(line, "LIST\n") == 0){
+            message->mesg_type = LIST;
+            msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+        }
+        else if(strcmp(line, "STOP\n") == 0){
+            message->mesg_type = STOP;
+            msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+            break;
+        }
+        else{
+            if(sscanf(line, "%s %d %s", cmd, &id, string) == 3){
+                if(strcmp(cmd, "2ONE") == 0){
+                    message->mesg_type = TOALL;
+                    strcpy(message->message, string);
+                    time_t t = time(NULL);
+                    message->tm = *localtime(&t);
+                    message->dest = id;
+                    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                }
             }
-            strcpy(command[i], token);
-            token = strtok(NULL, " ");
-            printf("%d", i);
-            i++;
+            else if(sscanf(line, "%s %s", cmd, string)== 2){
+                if(strcmp(cmd, "2ALL") == 0){
+                    message->mesg_type = TOALL;
+                    strcpy(message->message, string);
+                    time_t t = time(NULL);
+                    message->tm = *localtime(&t);
+                    msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+                }
+            }
         }
-        if (correct == 0){
-            printf("Correct");
-        }
-        
 
-        
 
-        // if (strcmp(input, "LIST") == 0)
-        // {
-        //     printf("OK");
-        //     fflush(stdout);
-        //     message->mesg_type = LIST;
-        //     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-        // }
-        // if (strcmp(input, ""))
+        line[0] = '\0';
+
     }
 
     msgctl(msgid, IPC_RMID, NULL);
