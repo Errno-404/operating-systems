@@ -53,7 +53,7 @@ int main()
             break;
 
         case TOONE:
-            printf("ODEBRALEM");
+            send_to_one(message);
             break;
         case STOP:
             finish_client_work();

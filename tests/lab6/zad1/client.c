@@ -17,7 +17,7 @@ int client_ipc_id, server_msgid;
 MessageBuffer *message;
 
 
-// For unblocking input, because sending STOP via IPC and doing the same via signal would be redundant
+// For unblocking input, because sending STOP via IPC and doing the same via signal would be 
 struct timeval tv;
 fd_set readfds;
 int retval;
@@ -33,19 +33,17 @@ void stop_client()
 }
 
 
-
-
-
-
+key_t server_key, key;
 int main()
 {
+    signal(SIGINT, stop_client);
 
-    key_t server_ipc_key = ftok(getenv("HOME"), PROJ_ID);
-    server_msgid = msgget(server_ipc_key, 0666);
+    server_key = ftok(getenv("HOME"), PROJ_ID);
+    server_msgid = msgget(server_key, 0666);
 
     // tworzymy własną kolejkę
     srand(time(NULL));
-    key_t key = ftok(getenv("HOME"), rand() % 255 + 1);
+    key = ftok(getenv("HOME"), rand() % 255 + 1);
     client_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
     // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
@@ -60,11 +58,11 @@ int main()
     // if server overload then exit
     if (message->client_id == MAX_NO_CLIENTS)
     {
-        printf("Server overloaded!\n");
+        printf("Server overloaded! Exiting ...\n");
         stop_client();
     }
 
-    signal(SIGINT, stop_client);
+    
 
     // parsing input
 
