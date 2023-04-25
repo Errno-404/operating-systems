@@ -24,11 +24,13 @@ int main()
     // wysyłamy message do servera ze swoim key (póki co INIT = 1)
     MessageBuffer *message = malloc(sizeof(MessageBuffer));
     
-    message->mesg_type = 1;
+    message->mesg_type = INIT;
     message->client_key = key;
-    message->client_id = 143;
 
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
+    msgrcv(msgid, message, sizeof(MessageBuffer), INIT, 0);
+    printf("%d", message->client_id);
+
 
     msgctl(msgid, IPC_RMID, NULL);
 

@@ -7,4 +7,9 @@ struct MessageBuffer {
 };
 
 
+
+typedef enum MSG_TYPE{
+    INIT = 1
+} MSG_TYPE;
+
 typedef struct MessageBuffer MessageBuffer;
