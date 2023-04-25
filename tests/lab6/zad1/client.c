@@ -98,8 +98,6 @@ int main()
                         message->client_id = my_id;
                         message->mesg_type = TOONE;
                         strcpy(message->message, string);
-                        time_t t = time(NULL);
-                        message->tm = *localtime(&t);
                         message->dest = id;
                         msgsnd(server_msgid, message, MSG_SIZE, 0);
                     }
@@ -111,8 +109,6 @@ int main()
                         message->client_id = my_id;
                         message->mesg_type = TOALL;
                         strcpy(message->message, string);
-                        time_t t = time(NULL);
-                        message->tm = *localtime(&t);
                         msgsnd(server_msgid, message, MSG_SIZE, 0);
                     }
                 }
@@ -172,6 +168,3 @@ void initialize_client_connection()
         stop_on_server_overflow();
     }
 }
-
-
-

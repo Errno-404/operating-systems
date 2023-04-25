@@ -21,6 +21,11 @@ void update_new_client_id();
 void send_to_all(MessageBuffer *);
 void send_to_one(MessageBuffer *);
 
+void save_log(int, int, struct tm);
+
+struct tm get_time();
+struct tm tm;
+
 int main()
 {
 
@@ -37,19 +42,26 @@ int main()
             break;
 
         case LIST:
+            tm = get_time();
             display_active_clients();
+            save_log(message->mesg_type, message->client_id, tm);
             break;
 
         case TOALL:
+            tm = get_time();
             send_to_all(message);
-
+            save_log(message->mesg_type, message->client_id, tm);
             break;
 
         case TOONE:
+            tm = get_time();
             send_to_one(message);
+            save_log(message->mesg_type, message->client_id, tm);
             break;
         case STOP:
+           tm = get_time();
             finish_client_work();
+            save_log(message->mesg_type, message->client_id, tm);
             break;
 
         default:
@@ -164,7 +176,8 @@ void send_to_all(MessageBuffer *message)
     tosend->client_id = this_client_id;
     tosend->mesg_type = TOALL;
     strcpy(tosend->message, message->message);
-    tosend->tm = message->tm;
+
+    tosend->tm = get_time();
 
     for (int i = 0; i < MAX_NO_CLIENTS; i++)
     {
@@ -173,6 +186,23 @@ void send_to_all(MessageBuffer *message)
             msgsnd(client_msgids[i], tosend, MSG_SIZE, 0);
         }
     }
+}
+
+struct tm get_time()
+{
+    time_t t = time(NULL);
+    return *localtime(&t);
+}
+
+void save_log(int type, int id, struct tm tm)
+{
+    FILE *fp = fopen("log.txt", "a");
+
+
+  
+    fprintf(fp, "Type: %d\nClient ID: %d\nServer  time: %d-%02d-%02d %02d:%02d:%02d\n", type, id, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,tm.tm_sec);
+
+    fclose(fp);
 }
 
 void send_to_one(MessageBuffer *message)
@@ -184,13 +214,11 @@ void send_to_one(MessageBuffer *message)
     tosend->mesg_type = TOONE;
     strcpy(tosend->message, message->message);
     tosend->dest = dest;
-    tosend->tm = message->tm;
 
-    
+    tosend->tm = get_time();
+
     if (dest >= 0 && dest < MAX_NO_CLIENTS && client_msgids[dest] != -1)
     {
         msgsnd(client_msgids[dest], tosend, MSG_SIZE, 0);
-
     }
-
 }

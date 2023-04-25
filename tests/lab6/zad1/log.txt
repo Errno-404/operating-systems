@@ -1,0 +1,15 @@
+Type: 4
+Client ID: 0
+Server  time: 2023-04-25 22:00:20
+Type: 3
+Client ID: 1
+Server  time: 2023-04-25 22:00:27
+Type: 2
+Client ID: 1
+Server  time: 2023-04-25 22:00:32
+Type: 5
+Client ID: 1
+Server  time: 2023-04-25 22:00:46
+Type: 5
+Client ID: 0
+Server  time: 2023-04-25 22:00:51
