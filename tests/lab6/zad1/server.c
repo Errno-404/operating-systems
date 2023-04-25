@@ -13,8 +13,12 @@ int server_ipc_id;
 MessageBuffer *message;
 int active_clients[10];
 
+
+int client_msgids[10];
+
 void initialize_server();
 void init_client_connection();
+void finish_client_work();
 
 void display_active_clients();
 void stop_server();
@@ -33,6 +37,7 @@ int main()
         {
         case INIT:
             init_client_connection();
+            display_active_clients();
             break;
 
         case LIST:
@@ -50,15 +55,7 @@ int main()
             fflush(stdout);
             break;
         case STOP:
-            int this_client_id = message->client_id;
-            active_clients[this_client_id] = -1;
-
-            // new_client_id update (always the lowest possible)
-            if (this_client_id < new_client_id)
-            {
-                new_client_id = this_client_id;
-            }
-
+            finish_client_work();
             break;
 
         default:
@@ -80,10 +77,14 @@ void initialize_server()
     // tworzymy strukturę na komunikaty
     message = malloc(sizeof(MessageBuffer));
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < MAX_NO_CLIENTS; i++)
     {
         active_clients[i] = -1;
     }
+
+    for(int i = 0; i <  MAX_NO_CLIENTS; i ++){
+        client_msgids[i] = -1;
+    }    
 
     signal(SIGINT, stop_server);
 }
@@ -98,6 +99,7 @@ void init_client_connection()
     if (new_client_id < MAX_NO_CLIENTS)
     {
         active_clients[new_client_id] = new_client_id;
+        client_msgids[new_client_id] = client_msgid;
         update_new_client_id();
     }
 
@@ -107,7 +109,7 @@ void init_client_connection()
 void display_active_clients()
 {
     printf("Active clients:\n");
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < MAX_NO_CLIENTS; i++)
     {
         if (active_clients[i] != -1)
         {
@@ -117,8 +119,31 @@ void display_active_clients()
     fflush(stdout);
 }
 
+void finish_client_work()
+{
+    int this_client_id = message->client_id;
+    active_clients[this_client_id] = -1;
+    client_msgids[this_client_id] = -1;
+
+    // new_client_id update (always the lowest possible)
+    if (this_client_id < new_client_id)
+    {
+        new_client_id = this_client_id;
+    }
+}
+
 void stop_server()
 {
+    // to continue
+    message->mesg_type = STOP;
+    for (int i = 0; i < MAX_NO_CLIENTS; i++)
+    {
+        if(client_msgids[i] != -1){
+            msgsnd(client_msgids[i], message, sizeof(MessageBuffer), 0);
+            msgrcv(server_ipc_id, message, sizeof(MessageBuffer), STOP, 0);
+        }
+    }
+    
     msgctl(server_ipc_id, IPC_RMID, NULL);
     exit(0);
 }

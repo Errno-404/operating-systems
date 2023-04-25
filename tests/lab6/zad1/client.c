@@ -9,7 +9,7 @@
 
 // TODO naprawa czytania linii poleceń, dodanie warunków i obsługi błędów, przeniesienie do funkcji tych gigantów
 
-int server_ipc_id, server_msgid;
+int client_ipc_id, server_msgid;
 MessageBuffer *message;
 
 void stop_client()
@@ -17,21 +17,20 @@ void stop_client()
     message->mesg_type = STOP;
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
 
-    msgctl(server_ipc_id, IPC_RMID, NULL);
+    msgctl(client_ipc_id, IPC_RMID, NULL);
     exit(0);
 }
 
+
 int main()
 {
-
-    // po uruchomieniu klienta pobieramy kolejkę serwera
     key_t server_key = ftok(getenv("HOME"), PROJ_ID);
     server_msgid = msgget(server_key, 0666);
 
     // tworzymy własną kolejkę
     srand(time(NULL));
     key_t key = ftok(getenv("HOME"), rand() % 255 + 1);
-    server_ipc_id = msgget(key, 0666 | IPC_CREAT);
+    client_ipc_id = msgget(key, 0666 | IPC_CREAT);
 
     // wysyłamy message do servera ze swoim key  i czekamy na potwierdzenie
     message = malloc(sizeof(MessageBuffer));
@@ -40,7 +39,7 @@ int main()
     message->client_key = key;
 
     msgsnd(server_msgid, message, sizeof(MessageBuffer), 0);
-    msgrcv(server_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
+    msgrcv(client_ipc_id, message, sizeof(MessageBuffer), INIT, 0);
 
     // if server overload then exit
     if (message->client_id == MAX_NO_CLIENTS)
@@ -59,6 +58,15 @@ int main()
     int id;
     while (1)
     {
+        while (msgrcv(client_ipc_id, message, sizeof(MessageBuffer), 0, IPC_NOWAIT) >= 0)
+        {
+            if (message->mesg_type == STOP)
+            {
+                printf("Received stop message, leaving..\n");
+                stop_client();
+            }
+        }
+
         fgets(line, sizeof(line), stdin);
         if (strcmp(line, "LIST\n") == 0)
         {
@@ -101,7 +109,7 @@ int main()
         line[0] = '\0';
     }
 
-    msgctl(server_ipc_id, IPC_RMID, NULL);
+    msgctl(client_ipc_id, IPC_RMID, NULL);
 
     return 0;
 }
